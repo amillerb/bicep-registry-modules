@@ -25,14 +25,14 @@ var enableDdosProtection = !developmentEnvironment
 
 // ---- Networking resources ----
 
-// DDoS Protection Plan
-module ddosProtectionPlan 'br/public:avm/res/network/ddos-protection-plan:0.1.4' =  if (enableDdosProtection == true){
-  name: 'ddosProtectionPlanDeployment'
-  params: {
-    name: ddosPlanName
-    location: location
-  }
-}
+// DDoS Protection Plan -- move this to main if want to enable with boolean
+// module ddosProtectionPlan 'br/public:avm/res/network/ddos-protection-plan:0.1.4' =  if (enableDdosProtection == true){
+//   name: 'ddosProtectionPlanDeployment'
+//   params: {
+//     name: ddosPlanName
+//     location: location
+//   }
+// }
 
 //vnet and subnets
 module vnet 'br/public:avm/res/network/virtual-network:0.2.0' = {
@@ -44,51 +44,34 @@ module vnet 'br/public:avm/res/network/virtual-network:0.2.0' = {
     ]
     name: vnetName
     location: location
-    ddosProtectionPlanResourceId: ddosProtectionPlan.outputs.resourceId
+    // ddosProtectionPlanResourceId: ddosProtectionPlan.outputs.resourceId
     subnets: [
       {
         //App services plan subnet
         name: 'snet-appServicePlan'
-        properties: {
-          addressPrefix: appServicesSubnetPrefix
-          networkSecurityGroupResourceId: appServiceSubnetNsg.outputs.resourceId
-    
-          delegations: [
-            {
-              name: 'delegation'
-              properties: {
-                serviceName: 'Microsoft.Web/serverFarms'
-              }
-            }
-          ]
-        }
+        addressPrefix: appServicesSubnetPrefix
+        networkSecurityGroupResourceId: appServiceSubnetNsg.outputs.resourceId
+        delegation: 'Microsoft.Web/serverFarms'
       }
       {
         //App Gateway subnet
         name: 'snet-appGateway'
-        properties: {
-          addressPrefix: appGatewaySubnetPrefix
-          networkSecurityGroupResourceId: appGatewaySubnetNsg.outputs.resourceId
-          privateEndpointNetworkPolicies: 'Enabled'
-          privateLinkServiceNetworkPolicies: 'Enabled'
-        }
+        addressPrefix: appGatewaySubnetPrefix
+        networkSecurityGroupResourceId: appGatewaySubnetNsg.outputs.resourceId
+        privateEndpointNetworkPolicies: 'Enabled'
+        privateLinkServiceNetworkPolicies: 'Enabled'
       }
       {
         //Private endpoints subnet
         name: 'snet-privateEndpoints'
-        properties: {
-          addressPrefix: privateEndpointsSubnetPrefix
-          networkSecurityGroupResourceId: privateEndpointsSubnetNsg.outputs.resourceId
-          
-        }
+        addressPrefix: privateEndpointsSubnetPrefix
+        networkSecurityGroupResourceId: privateEndpointsSubnetNsg.outputs.resourceId
       }
       {
         // Build agents subnet
         name: 'snet-agents'
-        properties: {
-          addressPrefix: agentsSubnetPrefix
-          networkSecurityGroupResourceId: agentsSubnetNsg.outputs.resourceId  
-        }
+        addressPrefix: agentsSubnetPrefix
+        networkSecurityGroupResourceId: agentsSubnetNsg.outputs.resourceId 
       }
     ]
   }
