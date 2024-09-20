@@ -76,7 +76,6 @@ module appGatewayPublicIp 'br/public:avm/res/network/public-ip-address:0.4.2' = 
     publicIPAllocationMethod: 'Static'
     idleTimeoutInMinutes: 4
     skuName: 'Standard'
-    skuTier: 'Regional'
     zones: !developmentEnvironment ? availabilityZones : null
   }
 }
@@ -93,10 +92,12 @@ module wafPolicy 'br/public:avm/res/network/application-gateway-web-application-
         {
           ruleSetType: 'OWASP'
           ruleSetVersion: '3.2'
+          ruleGroupOverrides: []
         }
         {
           ruleSetType: 'Microsoft_BotManagerRuleSet'
           ruleSetVersion: '0.1'
+          ruleGroupOverrides: []
         }
       ]
     }
@@ -110,7 +111,7 @@ module appGateWay 'br/public:avm/res/network/application-gateway:0.1.0' = {
   name: 'applicationGatewayDeployment'
   params: {
     name: appGateWayName
-    zones: !developmentEnvironment ? availabilityZones : null
+    zones: ['1', '2', '3']
     backendAddressPools: [
       {
         name: 'pool-${appName}'
@@ -194,6 +195,32 @@ module appGateWay 'br/public:avm/res/network/application-gateway:0.1.0' = {
         }
       }
     ]
+    requestRoutingRules: [
+      {
+        name: 'WebAppRoutingRule'
+        properties: {
+          ruleType: 'Basic'
+          priority: 100
+          httpListener: {
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGateWayName, 'WebAppListener')
+          }
+          backendAddressPool: {
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/backendAddressPools',
+              appGateWayName,
+              'pool-${appName}'
+            )
+          }
+          backendHttpSettings: {
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/backendHttpSettingsCollection',
+              appGateWayName,
+              'WebAppBackendHttpSettings'
+            )
+          }
+        }
+      }
+    ]
     location: location
     probes: [
       {
@@ -241,7 +268,13 @@ module appGateWay 'br/public:avm/res/network/application-gateway:0.1.0' = {
             category: 'AllMetrics'
           }
         ]
-        name: '$appgw-diagnosticSettings'
+        logCategoriesAndGroups:[
+          {
+            category: 'allLogs'
+          }
+          
+        ]
+        name: '${appGateWayName}-diagnosticSettings'
         workspaceResourceId: logWorkspaceId
       }
     ]
